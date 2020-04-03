@@ -1,6 +1,5 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
-import * as cors from 'cors';
 
 import { Logger } from './logger'
 import { Planet } from "./model/planet";
@@ -23,13 +22,29 @@ class App {
     // Configure Express middleware
     private middleware(): void {
         this.express.use(bodyParser.json());
-        this.express.use(bodyParser.urlencoded({ extended: false }));      
+        this.express.use(bodyParser.urlencoded({ extended: false }));
+        this.express.use(function (req, res, next) {
+
+            // Website you wish to allow to connect
+            res.setHeader('Access-Control-Allow-Origin', '*');
+        
+            // Request methods you wish to allow
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+        
+            // Request headers you wish to allow
+            res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+        
+            // Set to true if you need the website to include cookies in the requests sent
+            // to the API (e.g. in case you use sessions)
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        
+            // Pass to next layer of middleware
+            next();
+        });
     }
 
     private routes(): void {
         
-        this.express.use(cors({origin: '*'}));
-
         this.express.get('/', (req,res,next) => {
             res.send("Welcome to the Planetarium REST API");
         });      
