@@ -1,5 +1,6 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
+import * as cors from 'cors';
 
 import { Logger } from './logger'
 import { Planet } from "./model/planet";
@@ -22,11 +23,13 @@ class App {
     // Configure Express middleware
     private middleware(): void {
         this.express.use(bodyParser.json());
-        this.express.use(bodyParser.urlencoded({ extended: false }));
+        this.express.use(bodyParser.urlencoded({ extended: false }));      
     }
 
     private routes(): void {
         
+        this.express.use(cors({origin: '*'}));
+
         this.express.get('/', (req,res,next) => {
             res.send("Welcome to the Planetarium REST API");
         });      
