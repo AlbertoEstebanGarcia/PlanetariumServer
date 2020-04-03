@@ -1,3 +1,4 @@
+require('express'); 
 import App from './app';
 import * as http from 'http';
 

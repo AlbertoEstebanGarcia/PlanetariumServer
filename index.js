@@ -1,5 +1,6 @@
 "use strict";
 exports.__esModule = true;
+require('express');
 var app_1 = require("./app");
 var http = require("http");
 var port = 8080;
