@@ -1,8 +1,10 @@
 import App from './app';
 import * as http from 'http';
+import * as cors from 'cors'
 
 const port = process.env.PORT || 8080;
 
+App.use(cors());
 App.set('port', port);
 const server = http.createServer(App);
 server.listen(port);
