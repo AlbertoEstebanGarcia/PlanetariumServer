@@ -99,7 +99,7 @@ class App {
         // Delete planet by id
         this.express.delete("/planets/:id", (req,res,next) => {
             this.log.info(req.url)
-            const success = this.deletePlanet(parseInt(req.params.id));
+            const success = this.deletePlanet(req.params.id);
             if (success) {
                 return this.success(res, 200, 'success');
             } else {
@@ -124,7 +124,7 @@ class App {
         return planet;
     }
 
-    private deletePlanet(id: number): boolean {
+    private deletePlanet(id: string): boolean {
         const position = this.planets.findIndex(planet => planet.id === id);
         if (position > -1) {
             this.planets.splice(position, 1);

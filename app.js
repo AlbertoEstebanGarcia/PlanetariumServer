@@ -84,7 +84,7 @@ var App = /** @class */ (function () {
         // Delete planet by id
         this.express["delete"]("/planets/:id", function (req, res, next) {
             _this.log.info(req.url);
-            var success = _this.deletePlanet(parseInt(req.params.id));
+            var success = _this.deletePlanet(req.params.id);
             if (success) {
                 return _this.success(res, 200, 'success');
             }
