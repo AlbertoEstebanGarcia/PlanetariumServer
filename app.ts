@@ -13,7 +13,6 @@ class App {
 
     constructor() {
         this.log = new Logger();
-        this.generatePlanets();
         this.express = express();
         this.middleware();
         this.routes();
@@ -43,7 +42,7 @@ class App {
         
         this.express.get('/', (req,res,next) => {
             res.send("Welcome to the Planetarium REST API");
-        });      
+        });
 
         // Get all the planets
         this.express.get("/planets", (req,res,next) => {
@@ -65,53 +64,94 @@ class App {
         // Add a new planet        
         this.express.post("/planets", (req,res,next) => {
             this.log.info(req.url);
-            const name = req.body.name;
 
-            if(this.isNameAlreadyInUse(name)) {
-                return res.status(400).send({message: 'The name of the planet is already in use'});
-            } else {
-                const newPlanet = this.createPlanet(req.body.name);
-                this.planets.push(newPlanet);
+            if(this.isDataValid(req.body)) {
+                let planet = new Planet();
+                planet.id = this.generateId();
+                planet = this.setPlanetAttributes(planet, req.body);
+                this.planets.push(planet);
                 res.json(this.planets);
+            } else {
+                return this.error(res, 400, 'The parameters provided are incorrect, avoiding to add a new planet');
             }
-            
         });
 
         // Update planet by id
         this.express.put("/planets/:id", (req,res,next) => {
             this.log.info(req.url)
-            const name = req.body.name;
 
-            if(this.isNameAlreadyInUse(name)) {
-                return res.status(400).send({message: 'The name of the planet is already in use'});
-            } else {
+            if(this.isDataValid(req.body)) {
                 const planet = this.planets.filter(planet => {
                     if(req.params.id === planet.id.toString()) {
-                        planet.name = req.body.name
-                        return planet;
+                        return this.setPlanetAttributes(planet, req.body);
                     }
                 })
-    
-                res.json(planet);
-            }          
+                if (planet) {
+                    res.json(planet);
+                } else {
+                    return this.error(res, 400, 'Planet does not exist');
+                }
+            } else {
+                return this.error(res, 400, 'The parameters provided are incorrect, avoiding to update the planet');              
+            }
+        });
+
+        // Delete planet by id
+        this.express.delete("/planets/:id", (req,res,next) => {
+            this.log.info(req.url)
+            const success = this.deletePlanet(parseInt(req.params.id));
+            if (success) {
+                return this.success(res, 200, 'success');
+            } else {
+                return this.error(res, 400, 'Planet does not exist');
+            }
         });
 
         // Undefined routes
         this.express.use('*', (req,res,next) => {
-            this.log.info(req.url)
-            res.send("Incorrect URL");
+            this.log.info(req.url);
+            return this.error(res, 400, 'Incorrect URL');
         });
     }
 
-    private createPlanet(name: string): Planet {
-        const planet = new Planet();
-        planet.id = this.generateId();
-        planet.name = name;
+    private setPlanetAttributes(planet: Planet, body: any): Planet {
+        planet.name = body.name;
+        planet.distance = body.distance;
+        planet.gravity = body.gravity;
+        planet.satellites = body.satellites;
+        planet.radius = body.radius;
+        planet.imageUrl = body.imageUrl;
         return planet;
     }
 
-    private isNameAlreadyInUse(name: string): boolean {
-        return this.planets.some(planet => planet.name === name);
+    private deletePlanet(id: number): boolean {
+        const position = this.planets.findIndex(planet => planet.id === id);
+        if (position > -1) {
+            this.planets.splice(position, 1);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private isDataValid(body: any): boolean {
+
+        let isDataValid = true;
+
+        if (!body.name || !body.distance || !body.gravity || !body.satellites || !body.radius || !body.imageUrl) {
+            isDataValid = false;
+        } else {
+
+            if (body.distance < 0 || body.gravity < 0 || body.satellites < 0 || body.radius < 0 ) {
+                isDataValid = false;
+            }
+    
+            if (!body.imageUrl) {
+                isDataValid = false;
+            }
+        }
+
+        return isDataValid;
     }
 
     private generateId() {        
@@ -120,11 +160,12 @@ class App {
             : 1 + Math.max.apply(Math, this.planets.map(planet => { return planet.id; }));
     }
 
-    private generatePlanets() {
-        const p1 = this.createPlanet('Earth');
-        this.planets.push(p1);
-        const p2 = this.createPlanet('Mars');
-        this.planets.push(p2);
+    private success(response: any, status: number, message: string) {
+        return response.status(status).send({message: message});
+    }
+
+    private error(response: any, status: number, error: string) {
+        return response.status(status).send({error: error});
     }
 }
 
