@@ -2,10 +2,8 @@
 exports.__esModule = true;
 var app_1 = require("./app");
 var http = require("http");
-var cors = require("cors");
 var mongoose = require('mongoose');
 var port = process.env.PORT || 8080;
-app_1["default"].use(cors());
 app_1["default"].set('port', port);
 var server = http.createServer(app_1["default"]);
 server.listen(port);
