@@ -1,10 +1,9 @@
+const mongoose = require('mongoose');
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
-const mongoose = require('mongoose');
 
 import { Logger } from './logger'
 import Planet from './models/planet'
-
 
 class App {
 

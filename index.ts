@@ -2,7 +2,6 @@ import App from './app';
 import * as http from 'http';
 import * as cors from 'cors'
 const mongoose = require('mongoose');
-import { models } from "./db/index";
 
 const port = process.env.PORT || 8080;
 
