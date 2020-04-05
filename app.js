@@ -9,6 +9,7 @@ var App = /** @class */ (function () {
     function App() {
         this.SUCCESS_CODE = 200;
         this.BAD_REQUEST_CODE = 400;
+        this.NOT_FOUND_CODE = 404;
         this.INTERNAL_ERROR_CODE = 500;
         this.log = new logger_1.Logger();
         this.express = express();
@@ -19,6 +20,8 @@ var App = /** @class */ (function () {
     App.prototype.middleware = function () {
         this.express.use(bodyParser.json());
         this.express.use(bodyParser.urlencoded({ extended: false }));
+        this.express.use(express.static(__dirname + '/apidoc'));
+        this.express.use(express.static(process.cwd()));
         this.express.use(function (req, res, next) {
             // Website you wish to allow to connect
             res.header('Access-Control-Allow-Origin', '*');
@@ -33,12 +36,40 @@ var App = /** @class */ (function () {
     App.prototype.routes = function () {
         var _this = this;
         this.express.get('/', function (req, res, next) {
-            res.send("Welcome to the Planetarium REST API");
+            res.sendFile(__dirname + '/index.html');
         });
-        // Get all the planets
+        /**
+         * @api {get} /planets/ Returns all the planets
+         * @apiName GetPlanets
+         * @apiGroup Planets
+         *
+         * @apiSuccess { Object[] } planets List of planets
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     [{
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }]
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         * @apiExample {curl} Example usage:
+         *     curl -i http://localhost:8080/planets
+         */
         this.express.get("/planets", function (req, res, next) {
             _this.log.info(req.url);
-            _this.getAllPlanets().then(function (planets) {
+            _this.getPlanets().then(function (planets) {
                 if (planets) {
                     res.json(planets);
                 }
@@ -47,7 +78,35 @@ var App = /** @class */ (function () {
                 }
             });
         });
-        // Add a new planet        
+        /**
+         * @api {post} /planets/ Add a new planet
+         * @apiName PostPlanets
+         * @apiGroup Planets
+         *
+         * @apiParam { Object } planet Planet with all the fields in the body request
+         *
+         * @apiSuccess { Object } planet Planet added to the database
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     {
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         */
         this.express.post("/planets", function (req, res, next) {
             _this.log.info(req.url);
             if (_this.isDataValid(req.body)) {
@@ -64,7 +123,36 @@ var App = /** @class */ (function () {
                 return _this.error(res, _this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to add a new planet');
             }
         });
-        // Update planet by id
+        /**
+        * @api {put} /planets/:id Update a planet
+        * @apiName PutPlanets
+        * @apiGroup Planets
+        *
+        * @apiParam { String } id Id of the planet to update
+        * @apiParam { Object } planet Planet with all the fields in the body request
+        *
+        * @apiSuccess { Object } planet Planet updated
+        *
+        * @apiSuccessExample Success-Response:
+        *     HTTP/1.1 200 OK
+        *     {
+        *       'id': '5e89c138d9c56a4460717c86',
+        *       'name': 'Earth',
+        *       'distance': '6000',
+        *       'gravity': '9.78',
+        *       'satellites': '1',
+        *       'radius': '6000',
+        *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+        *     }
+        *
+        * @apiError error internal error
+        *
+        * @apiErrorExample error:
+        *     HTTP/1.1 500 Internal Error
+        *     {
+        *       'error': 'Database error'
+        *     }
+        */
         this.express.put("/planets/:id", function (req, res, next) {
             _this.log.info(req.url);
             if (_this.isDataValid(req.body)) {
@@ -81,7 +169,35 @@ var App = /** @class */ (function () {
                 return _this.error(res, _this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to update the planet');
             }
         });
-        // Delete planet by id
+        /**
+        * @api {delete} /planets/:id Delete a planet
+        * @apiName DeletePlanets
+        * @apiGroup Planets
+        *
+        * @apiParam { String } id Id of the planet to delete
+        *
+        * @apiSuccess { Object } planet Planet deleted
+        *
+        * @apiSuccessExample Success-Response:
+        *     HTTP/1.1 200 OK
+        *     {
+        *       'id': '5e89c138d9c56a4460717c86',
+        *       'name': 'Earth',
+        *       'distance': '6000',
+        *       'gravity': '9.78',
+        *       'satellites': '1',
+        *       'radius': '6000',
+        *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+        *     }
+        *
+        * @apiError error internal error
+        *
+        * @apiErrorExample error:
+        *     HTTP/1.1 500 Internal Error
+        *     {
+        *       'error': 'Database error'
+        *     }
+        */
         this.express["delete"]("/planets/:id", function (req, res, next) {
             _this.deletePlanet(req.params.id).then(function (planet) {
                 if (planet) {
@@ -95,10 +211,10 @@ var App = /** @class */ (function () {
         // Undefined routes
         this.express.use('*', function (req, res, next) {
             _this.log.info(req.url);
-            return _this.error(res, 400, 'Incorrect URL');
+            return _this.error(res, _this.NOT_FOUND_CODE, 'Incorrect URL');
         });
     };
-    App.prototype.getAllPlanets = function () {
+    App.prototype.getPlanets = function () {
         var _this = this;
         return planet_1["default"].find({}).then(function (result) {
             return result;

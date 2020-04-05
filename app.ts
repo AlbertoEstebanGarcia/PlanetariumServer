@@ -9,6 +9,7 @@ class App {
 
     public SUCCESS_CODE = 200;
     public BAD_REQUEST_CODE = 400;
+    public NOT_FOUND_CODE = 404;
     public INTERNAL_ERROR_CODE = 500;
 
     public express: express.Application;
@@ -25,6 +26,8 @@ class App {
     private middleware(): void {
         this.express.use(bodyParser.json());
         this.express.use(bodyParser.urlencoded({ extended: false }));
+        this.express.use(express.static(__dirname + '/apidoc'));
+        this.express.use(express.static(process.cwd()));
         this.express.use(function (req, res, next) {
 
             // Website you wish to allow to connect
@@ -44,13 +47,41 @@ class App {
     private routes(): void {
         
         this.express.get('/', (req,res,next) => {
-            res.send("Welcome to the Planetarium REST API");
+            res.sendFile(__dirname + '/index.html');
         });
 
-        // Get all the planets
+        /**
+         * @api {get} /planets/ Returns all the planets
+         * @apiName GetPlanets
+         * @apiGroup Planets
+         *
+         * @apiSuccess { Object[] } planets List of planets
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     [{
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }]
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         * @apiExample {curl} Example usage:
+         *     curl -i http://localhost:8080/planets
+         */
         this.express.get("/planets", (req,res,next) => {
             this.log.info(req.url)
-            this.getAllPlanets().then(planets => {
+            this.getPlanets().then(planets => {
                 if (planets) {
                     res.json(planets);
                 } else {
@@ -59,7 +90,35 @@ class App {
             });
         });
 
-        // Add a new planet        
+        /**
+         * @api {post} /planets/ Add a new planet
+         * @apiName PostPlanets
+         * @apiGroup Planets
+         *
+         * @apiParam { Object } planet Planet with all the fields in the body request
+         * 
+         * @apiSuccess { Object } planet Planet added to the database
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     {
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         */
         this.express.post("/planets", (req,res,next) => {
             this.log.info(req.url);
 
@@ -76,7 +135,36 @@ class App {
             }
         });
 
-        // Update planet by id
+         /**
+         * @api {put} /planets/:id Update a planet
+         * @apiName PutPlanets
+         * @apiGroup Planets
+         *
+         * @apiParam { String } id Id of the planet to update
+         * @apiParam { Object } planet Planet with all the fields in the body request
+         * 
+         * @apiSuccess { Object } planet Planet updated
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     {
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         */
         this.express.put("/planets/:id", (req,res,next) => {
             this.log.info(req.url)
             if(this.isDataValid(req.body)) {
@@ -92,7 +180,35 @@ class App {
             }
         });
 
-        // Delete planet by id
+         /**
+         * @api {delete} /planets/:id Delete a planet
+         * @apiName DeletePlanets
+         * @apiGroup Planets
+         *
+         * @apiParam { String } id Id of the planet to delete
+         * 
+         * @apiSuccess { Object } planet Planet deleted
+         *
+         * @apiSuccessExample Success-Response:
+         *     HTTP/1.1 200 OK
+         *     {
+         *       'id': '5e89c138d9c56a4460717c86',
+         *       'name': 'Earth',
+         *       'distance': '6000',
+         *       'gravity': '9.78',
+         *       'satellites': '1',
+         *       'radius': '6000',
+         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *     }
+         *
+         * @apiError error internal error
+         *
+         * @apiErrorExample error:
+         *     HTTP/1.1 500 Internal Error
+         *     {
+         *       'error': 'Database error'
+         *     }
+         */
         this.express.delete("/planets/:id", (req,res,next) => {
             this.deletePlanet(req.params.id).then(planet => {
                 if (planet) {
@@ -106,11 +222,11 @@ class App {
         // Undefined routes
         this.express.use('*', (req,res,next) => {
             this.log.info(req.url);
-            return this.error(res, 400, 'Incorrect URL');
+            return this.error(res, this.NOT_FOUND_CODE, 'Incorrect URL');
         });
     }
 
-    private getAllPlanets() {
+    private getPlanets() {
         return Planet.find({}).then(result => {
             return result;
         })
