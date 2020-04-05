@@ -1,8 +1,8 @@
 "use strict";
 exports.__esModule = true;
+var mongoose = require('mongoose');
 var express = require("express");
 var bodyParser = require("body-parser");
-var mongoose = require('mongoose');
 var logger_1 = require("./logger");
 var planet_1 = require("./models/planet");
 var App = /** @class */ (function () {
