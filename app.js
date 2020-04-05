@@ -2,11 +2,14 @@
 exports.__esModule = true;
 var express = require("express");
 var bodyParser = require("body-parser");
+var mongoose = require('mongoose');
 var logger_1 = require("./logger");
-var planet_1 = require("./model/planet");
+var planet_1 = require("./models/planet");
 var App = /** @class */ (function () {
     function App() {
-        this.planets = [];
+        this.SUCCESS_CODE = 200;
+        this.BAD_REQUEST_CODE = 400;
+        this.INTERNAL_ERROR_CODE = 500;
         this.log = new logger_1.Logger();
         this.express = express();
         this.middleware();
@@ -35,62 +38,59 @@ var App = /** @class */ (function () {
         // Get all the planets
         this.express.get("/planets", function (req, res, next) {
             _this.log.info(req.url);
-            res.json(_this.planets);
-        });
-        // Get planet by name
-        this.express.get("/planets/:name", function (req, res, next) {
-            _this.log.info(req.url);
-            var planet = _this.planets.filter(function (planet) {
-                if (req.params.name.toLowerCase() === planet.name.toLowerCase()) {
-                    return planet;
+            _this.getAllPlanets().then(function (planets) {
+                if (planets) {
+                    res.json(planets);
+                }
+                else {
+                    _this.error(res, _this.INTERNAL_ERROR_CODE, 'Error getting planets from database');
                 }
             });
-            res.json(planet);
         });
         // Add a new planet        
         this.express.post("/planets", function (req, res, next) {
             _this.log.info(req.url);
             if (_this.isDataValid(req.body)) {
-                var planet = new planet_1.Planet();
-                planet.id = _this.generateId();
-                planet = _this.setPlanetAttributes(planet, req.body);
-                _this.planets.push(planet);
-                res.json(_this.planets);
+                _this.addPlanet(req.body).then(function (planet) {
+                    if (planet) {
+                        res.json(planet);
+                    }
+                    else {
+                        _this.error(res, _this.INTERNAL_ERROR_CODE, 'Error adding planet to database');
+                    }
+                });
             }
             else {
-                return _this.error(res, 400, 'The parameters provided are incorrect, avoiding to add a new planet');
+                return _this.error(res, _this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to add a new planet');
             }
         });
         // Update planet by id
         this.express.put("/planets/:id", function (req, res, next) {
             _this.log.info(req.url);
             if (_this.isDataValid(req.body)) {
-                var planet = _this.planets.filter(function (planet) {
-                    if (req.params.id === planet.id.toString()) {
-                        return _this.setPlanetAttributes(planet, req.body);
+                _this.updatePlanet(req.params.id, req.body).then(function (planet) {
+                    if (planet) {
+                        res.json(planet);
+                    }
+                    else {
+                        _this.error(res, _this.INTERNAL_ERROR_CODE, 'Error updating planet from database');
                     }
                 });
-                if (planet) {
-                    res.json(planet);
-                }
-                else {
-                    return _this.error(res, 400, 'Planet does not exist');
-                }
             }
             else {
-                return _this.error(res, 400, 'The parameters provided are incorrect, avoiding to update the planet');
+                return _this.error(res, _this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to update the planet');
             }
         });
         // Delete planet by id
         this.express["delete"]("/planets/:id", function (req, res, next) {
-            _this.log.info(req.url);
-            var success = _this.deletePlanet(req.params.id);
-            if (success) {
-                return _this.success(res, 200, 'success');
-            }
-            else {
-                return _this.error(res, 400, 'Planet does not exist');
-            }
+            _this.deletePlanet(req.params.id).then(function (planet) {
+                if (planet) {
+                    _this.success(res);
+                }
+                else {
+                    _this.error(res, _this.INTERNAL_ERROR_CODE, 'Error deleting planet from database');
+                }
+            });
         });
         // Undefined routes
         this.express.use('*', function (req, res, next) {
@@ -98,23 +98,70 @@ var App = /** @class */ (function () {
             return _this.error(res, 400, 'Incorrect URL');
         });
     };
-    App.prototype.setPlanetAttributes = function (planet, body) {
-        planet.name = body.name;
-        planet.distance = body.distance;
-        planet.gravity = body.gravity;
-        planet.satellites = body.satellites;
-        planet.radius = body.radius;
-        planet.imageUrl = body.imageUrl;
-        return planet;
+    App.prototype.getAllPlanets = function () {
+        var _this = this;
+        return planet_1["default"].find({}).then(function (result) {
+            return result;
+        })["catch"](function (error) {
+            _this.log.info("Unable to retrieve all the planets" + error);
+            return undefined;
+        });
     };
-    App.prototype.deletePlanet = function (id) {
-        var position = this.planets.findIndex(function (planet) { return planet.id === id; });
-        if (position > -1) {
-            this.planets.splice(position, 1);
-            return true;
+    App.prototype.addPlanet = function (body) {
+        var _this = this;
+        var data = new planet_1["default"](body);
+        return data.save()
+            .then(function (planet) {
+            _this.log.info("Added new planet to the database" + planet);
+            return planet;
+        })["catch"](function (error) {
+            _this.log.info("Unable to add new planet to the database" + error);
+            return undefined;
+        });
+    };
+    App.prototype.updatePlanet = function (id, body) {
+        var _this = this;
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            return planet_1["default"].findByIdAndUpdate(id, { $set: body }, { "new": true }).then(function (planet) {
+                if (planet) {
+                    _this.log.info("Updated planet with id " + id);
+                    return planet;
+                }
+                else {
+                    _this.log.info("Unable to update the planet with id: " + id);
+                    return undefined;
+                }
+            })["catch"](function (error) {
+                _this.log.info("Error in the database: " + error);
+                return undefined;
+            });
         }
         else {
-            return false;
+            this.log.info('Invalid Mongo id' + id);
+            return undefined;
+        }
+    };
+    App.prototype.deletePlanet = function (id) {
+        var _this = this;
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            return planet_1["default"].deleteOne({ _id: id })
+                .then(function (planet) {
+                if (planet) {
+                    _this.log.info('Removed planet with id ' + id);
+                    return planet;
+                }
+                else {
+                    _this.log.info("Unable to delete the planet with id: " + id);
+                    return undefined;
+                }
+            })["catch"](function (error) {
+                _this.log.info("Error in the database: " + error);
+                return undefined;
+            });
+        }
+        else {
+            this.log.info('Invalid Mongo id' + id);
+            return undefined;
         }
     };
     App.prototype.isDataValid = function (body) {
@@ -132,13 +179,8 @@ var App = /** @class */ (function () {
         }
         return isDataValid;
     };
-    App.prototype.generateId = function () {
-        return this.planets.length === 0
-            ? 1
-            : 1 + Math.max.apply(Math, this.planets.map(function (planet) { return planet.id; }));
-    };
-    App.prototype.success = function (response, status, message) {
-        return response.status(status).send({ message: message });
+    App.prototype.success = function (response) {
+        return response.status(this.SUCCESS_CODE).send({ message: 'Success' });
     };
     App.prototype.error = function (response, status, error) {
         return response.status(status).send({ error: error });

@@ -1,15 +1,19 @@
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
+const mongoose = require('mongoose');
 
 import { Logger } from './logger'
-import { Planet } from "./model/planet";
+import PlanetDTO from './models/planet'
+
 
 class App {
 
+    public SUCCESS_CODE = 200;
+    public BAD_REQUEST_CODE = 400;
+    public INTERNAL_ERROR_CODE = 500;
+
     public express: express.Application;
     public log: Logger;
-
-    private planets: Planet[] = [];
 
     constructor() {
         this.log = new Logger();
@@ -47,18 +51,13 @@ class App {
         // Get all the planets
         this.express.get("/planets", (req,res,next) => {
             this.log.info(req.url)
-            res.json(this.planets);
-        });
-
-        // Get planet by name
-        this.express.get("/planets/:name", (req,res,next) => {
-            this.log.info(req.url)
-            const planet = this.planets.filter(planet => {
-                if(req.params.name.toLowerCase() === planet.name.toLowerCase()){
-                    return planet;
+            this.getAllPlanets().then(planets => {
+                if (planets) {
+                    res.json(planets);
+                } else {
+                    this.error(res, this.INTERNAL_ERROR_CODE, 'Error getting planets from database');
                 }
-            })
-            res.json(planet);
+            });
         });
 
         // Add a new planet        
@@ -66,45 +65,43 @@ class App {
             this.log.info(req.url);
 
             if(this.isDataValid(req.body)) {
-                let planet = new Planet();
-                planet.id = this.generateId();
-                planet = this.setPlanetAttributes(planet, req.body);
-                this.planets.push(planet);
-                res.json(this.planets);
+                this.addPlanet(req.body).then(planet => {
+                    if (planet) {
+                        res.json(planet);
+                    } else {
+                        this.error(res, this.INTERNAL_ERROR_CODE, 'Error adding planet to database');
+                    }
+                });
             } else {
-                return this.error(res, 400, 'The parameters provided are incorrect, avoiding to add a new planet');
+                return this.error(res, this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to add a new planet');
             }
         });
 
         // Update planet by id
         this.express.put("/planets/:id", (req,res,next) => {
             this.log.info(req.url)
-
             if(this.isDataValid(req.body)) {
-                const planet = this.planets.filter(planet => {
-                    if(req.params.id === planet.id.toString()) {
-                        return this.setPlanetAttributes(planet, req.body);
+                this.updatePlanet(req.params.id, req.body).then(planet => {
+                    if (planet) {
+                        res.json(planet);
+                    } else {
+                        this.error(res, this.INTERNAL_ERROR_CODE, 'Error updating planet from database');
                     }
-                })
-                if (planet) {
-                    res.json(planet);
-                } else {
-                    return this.error(res, 400, 'Planet does not exist');
-                }
+                });
             } else {
-                return this.error(res, 400, 'The parameters provided are incorrect, avoiding to update the planet');              
+                return this.error(res, this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to update the planet');              
             }
         });
 
         // Delete planet by id
         this.express.delete("/planets/:id", (req,res,next) => {
-            this.log.info(req.url)
-            const success = this.deletePlanet(req.params.id);
-            if (success) {
-                return this.success(res, 200, 'success');
-            } else {
-                return this.error(res, 400, 'Planet does not exist');
-            }
+            this.deletePlanet(req.params.id).then(planet => {
+                if (planet) {
+                    this.success(res);
+                } else {
+                    this.error(res, this.INTERNAL_ERROR_CODE, 'Error deleting planet from database');
+                }
+            });
         });
 
         // Undefined routes
@@ -114,23 +111,68 @@ class App {
         });
     }
 
-    private setPlanetAttributes(planet: Planet, body: any): Planet {
-        planet.name = body.name;
-        planet.distance = body.distance;
-        planet.gravity = body.gravity;
-        planet.satellites = body.satellites;
-        planet.radius = body.radius;
-        planet.imageUrl = body.imageUrl;
-        return planet;
+    private getAllPlanets() {
+        return PlanetDTO.find({}).then(result => {
+            return result;
+        })
+        .catch(error => {
+            this.log.info("Unable to retrieve all the planets" + error);
+            return undefined;
+        });
     }
 
-    private deletePlanet(id: string): boolean {
-        const position = this.planets.findIndex(planet => planet.id === id);
-        if (position > -1) {
-            this.planets.splice(position, 1);
-            return true;
+    private addPlanet(body: any) {
+        const data = new PlanetDTO(body);
+        return data.save()
+            .then(planet => {
+                this.log.info("Added new planet to the database" + planet);
+                return planet;
+            })
+            .catch(error => {
+                this.log.info("Unable to add new planet to the database" + error);
+                return undefined;
+            });
+    }
+
+
+    private updatePlanet(id: string, body: any) {
+        if(mongoose.Types.ObjectId.isValid(id)) {
+            return PlanetDTO.findByIdAndUpdate(id, {$set:body} , {new:true}).then(planet =>{
+               if (planet) {
+                 this.log.info("Updated planet with id " + id);
+                 return planet;
+               } else {
+                this.log.info("Unable to update the planet with id: " + id);
+                return undefined;
+               }
+            }).catch(error => {
+                this.log.info("Error in the database: " + error)
+                return undefined;
+            });
         } else {
-            return false;
+            this.log.info('Invalid Mongo id' + id);
+            return undefined;
+        }
+    }
+
+    private deletePlanet(id: string) {
+        if(mongoose.Types.ObjectId.isValid(id)) {
+            return PlanetDTO.deleteOne({_id: id})
+              .then(planet => {
+                 if (planet) {
+                    this.log.info('Removed planet with id ' + id);
+                    return planet;
+                 } else {
+                    this.log.info("Unable to delete the planet with id: " + id);
+                    return undefined;
+                 }
+            }).catch((error)=>{
+                this.log.info("Error in the database: " + error)
+                return undefined;
+            })
+        } else {
+            this.log.info('Invalid Mongo id' + id);
+            return undefined;
         }
     }
 
@@ -154,14 +196,8 @@ class App {
         return isDataValid;
     }
 
-    private generateId() {        
-        return this.planets.length === 0
-            ? 1
-            : 1 + Math.max.apply(Math, this.planets.map(planet => { return planet.id; }));
-    }
-
-    private success(response: any, status: number, message: string) {
-        return response.status(status).send({message: message});
+    private success(response: any) {
+        return response.status(this.SUCCESS_CODE).send({message: 'Success'});
     }
 
     private error(response: any, status: number, error: string) {
