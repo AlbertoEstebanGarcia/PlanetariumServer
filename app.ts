@@ -69,10 +69,10 @@ class App {
          *       'imageUrl': 'https://www.wikipeda.com/earth.png'
          *     }]
          *
-         * @apiError error internal error
+         * @apiError InternalServerError 500 Internal server error
          *
-         * @apiErrorExample error:
-         *     HTTP/1.1 500 Internal Error
+         * @apiErrorExample Error:
+         *     HTTP/1.1 500 Internal Server Error
          *     {
          *       'error': 'Database error'
          *     }
@@ -111,12 +111,13 @@ class App {
          *       'imageUrl': 'https://www.wikipeda.com/earth.png'
          *     }
          *
-         * @apiError error internal error
+         * @apiError BadRequest 400 Bad request
+         * @apiError InternalServerError 500 Internal server error
          *
-         * @apiErrorExample error:
-         *     HTTP/1.1 500 Internal Error
+         * @apiErrorExample Error:
+         *     HTTP/1.1 400 Bad Request
          *     {
-         *       'error': 'Database error'
+         *       'error': 'Invalid parameters'
          *     }
          */
         this.express.post("/planets", (req,res,next) => {
@@ -157,12 +158,14 @@ class App {
          *       'imageUrl': 'https://www.wikipeda.com/earth.png'
          *     }
          *
-         * @apiError error internal error
+         * @apiError BadRequest 400 Bad request
+         * @apiError InternalServerError 500 Internal server error
          *
-         * @apiErrorExample error:
-         *     HTTP/1.1 500 Internal Error
+         *
+         * @apiErrorExample Error:
+         *     HTTP/1.1 400 Bad Request
          *     {
-         *       'error': 'Database error'
+         *       'error': 'Invalid parameters'
          *     }
          */
         this.express.put("/planets/:id", (req,res,next) => {
@@ -187,23 +190,17 @@ class App {
          *
          * @apiParam { String } id Id of the planet to delete
          * 
-         * @apiSuccess { Object } planet Planet deleted
+         * @apiSuccess { Object } success Success message
          *
          * @apiSuccessExample Success-Response:
          *     HTTP/1.1 200 OK
          *     {
-         *       'id': '5e89c138d9c56a4460717c86',
-         *       'name': 'Earth',
-         *       'distance': '6000',
-         *       'gravity': '9.78',
-         *       'satellites': '1',
-         *       'radius': '6000',
-         *       'imageUrl': 'https://www.wikipeda.com/earth.png'
+         *      'message': 'Success'
          *     }
          *
-         * @apiError error internal error
+         * @apiError InternalServerError 500 Internal server error
          *
-         * @apiErrorExample error:
+         * @apiErrorExample Error:
          *     HTTP/1.1 500 Internal Error
          *     {
          *       'error': 'Database error'
