@@ -3,7 +3,7 @@ import * as bodyParser from 'body-parser';
 const mongoose = require('mongoose');
 
 import { Logger } from './logger'
-import PlanetDTO from './models/planet'
+import Planet from './models/planet'
 
 
 class App {
@@ -112,7 +112,7 @@ class App {
     }
 
     private getAllPlanets() {
-        return PlanetDTO.find({}).then(result => {
+        return Planet.find({}).then(result => {
             return result;
         })
         .catch(error => {
@@ -122,7 +122,7 @@ class App {
     }
 
     private addPlanet(body: any) {
-        const data = new PlanetDTO(body);
+        const data = new Planet(body);
         return data.save()
             .then(planet => {
                 this.log.info("Added new planet to the database" + planet);
@@ -137,7 +137,7 @@ class App {
 
     private updatePlanet(id: string, body: any) {
         if(mongoose.Types.ObjectId.isValid(id)) {
-            return PlanetDTO.findByIdAndUpdate(id, {$set:body} , {new:true}).then(planet =>{
+            return Planet.findByIdAndUpdate(id, {$set:body} , {new:true}).then(planet =>{
                if (planet) {
                  this.log.info("Updated planet with id " + id);
                  return planet;
@@ -157,7 +157,7 @@ class App {
 
     private deletePlanet(id: string) {
         if(mongoose.Types.ObjectId.isValid(id)) {
-            return PlanetDTO.deleteOne({_id: id})
+            return Planet.deleteOne({_id: id})
               .then(planet => {
                  if (planet) {
                     this.log.info('Removed planet with id ' + id);

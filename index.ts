@@ -17,7 +17,7 @@ server.on('listening', function(): void {
     let bind = (typeof addr === 'string') ? `pipe ${addr}` : `port ${addr.port}`;
     console.log(`Listening on ${bind}`);
     
-    const mongodbConnection = "mongodb+srv://planetarium:planetarium2020@planetariumdb-og3n8.mongodb.net/planets?retryWrites=true&w=majority";
+    const mongodbConnection = "mongodb+srv://planetarium:planetarium2020@planetariumdb-og3n8.mongodb.net/planetarium?retryWrites=true&w=majority";
     // Connect to MongoDB with Mongoose.
     mongoose.connect(mongodbConnection, { useNewUrlParser: true, useUnifiedTopology: true})
     .then(() => console.log("MongoDB connected"))

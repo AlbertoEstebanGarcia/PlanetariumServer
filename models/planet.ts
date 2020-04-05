@@ -10,4 +10,4 @@ const PlanetSchema = new Schema({
   imageUrl: { type: String }
 });
 
-export default mongoose.model("PlanetDTO", PlanetSchema);
+export default mongoose.model("Planet", PlanetSchema);

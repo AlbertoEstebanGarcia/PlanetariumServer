@@ -13,7 +13,7 @@ server.on('listening', function () {
     var addr = server.address();
     var bind = (typeof addr === 'string') ? "pipe " + addr : "port " + addr.port;
     console.log("Listening on " + bind);
-    var mongodbConnection = "mongodb+srv://planetarium:planetarium2020@planetariumdb-og3n8.mongodb.net/planets?retryWrites=true&w=majority";
+    var mongodbConnection = "mongodb+srv://planetarium:planetarium2020@planetariumdb-og3n8.mongodb.net/planetarium?retryWrites=true&w=majority";
     // Connect to MongoDB with Mongoose.
     mongoose.connect(mongodbConnection, { useNewUrlParser: true, useUnifiedTopology: true })
         .then(function () { return console.log("MongoDB connected"); })["catch"](function (err) { return console.log(err); });

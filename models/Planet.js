@@ -10,4 +10,4 @@ var PlanetSchema = new Schema({
     radius: { type: String },
     imageUrl: { type: String }
 });
-exports["default"] = mongoose.model("PlanetDTO", PlanetSchema);
+exports["default"] = mongoose.model("Planet", PlanetSchema);
