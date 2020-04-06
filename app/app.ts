@@ -2,15 +2,17 @@ const mongoose = require('mongoose');
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 
-import { Logger } from './logger'
+import { Logger } from './utils/logger'
 import Planet from './models/planet'
 
-class App {
+class HttpStatus {
+    public static SUCCESS = 200;
+    public static BAD_REQUEST = 400;
+    public static NOT_FOUND = 404;
+    public static INTERNAL_ERROR = 500;
+}
 
-    public SUCCESS_CODE = 200;
-    public BAD_REQUEST_CODE = 400;
-    public NOT_FOUND_CODE = 404;
-    public INTERNAL_ERROR_CODE = 500;
+class App {
 
     public express: express.Application;
     public log: Logger;
@@ -89,7 +91,7 @@ class App {
                 if (planets) {
                     res.json(planets);
                 } else {
-                    this.error(res, this.INTERNAL_ERROR_CODE, 'Error getting planets from database');
+                    this.error(res, HttpStatus.INTERNAL_ERROR, 'Error getting planets from database');
                 }
             });
         });
@@ -132,11 +134,11 @@ class App {
                     if (planet) {
                         res.json(planet);
                     } else {
-                        this.error(res, this.INTERNAL_ERROR_CODE, 'Error adding planet to database');
+                        this.error(res, HttpStatus.INTERNAL_ERROR, 'Error adding planet to database');
                     }
                 });
             } else {
-                return this.error(res, this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to add a new planet');
+                return this.error(res, HttpStatus.BAD_REQUEST, 'The parameters provided are incorrect, avoiding to add a new planet');
             }
         });
 
@@ -179,11 +181,11 @@ class App {
                     if (planet) {
                         res.json(planet);
                     } else {
-                        this.error(res, this.INTERNAL_ERROR_CODE, 'Error updating planet from database');
+                        this.error(res, HttpStatus.INTERNAL_ERROR, 'Error updating planet from database');
                     }
                 });
             } else {
-                return this.error(res, this.BAD_REQUEST_CODE, 'The parameters provided are incorrect, avoiding to update the planet');              
+                return this.error(res, HttpStatus.BAD_REQUEST, 'The parameters provided are incorrect, avoiding to update the planet');              
             }
         });
 
@@ -215,7 +217,7 @@ class App {
                 if (planet) {
                     this.success(res);
                 } else {
-                    this.error(res, this.INTERNAL_ERROR_CODE, 'Error deleting planet from database');
+                    this.error(res, HttpStatus.INTERNAL_ERROR, 'Error deleting planet from database');
                 }
             });
         });
@@ -223,7 +225,7 @@ class App {
         // Undefined routes
         this.express.use('*', (req,res,next) => {
             this.log.info(req.url);
-            return this.error(res, this.NOT_FOUND_CODE, 'Incorrect URL');
+            return this.error(res, HttpStatus.NOT_FOUND, 'Incorrect URL');
         });
     }
 
@@ -313,7 +315,7 @@ class App {
     }
 
     private success(response: any) {
-        return response.status(this.SUCCESS_CODE).send({message: 'Success'});
+        return response.status(HttpStatus.SUCCESS).send({message: 'Success'});
     }
 
     private error(response: any, status: number, error: string) {
