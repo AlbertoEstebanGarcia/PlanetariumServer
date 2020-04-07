@@ -1,9 +1,8 @@
-const mongoose = require('mongoose');
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 
 import { Logger } from './utils/logger'
-import Planet from './models/planet'
+import { PlanetController } from './controllers/planet.controller'
 
 class HttpStatus {
     public static SUCCESS = 200;
@@ -16,41 +15,38 @@ class App {
 
     public express: express.Application;
     public log: Logger;
+    public planetController: PlanetController;
 
     constructor() {
         this.log = new Logger();
+        this.planetController = new PlanetController();
         this.express = express();
         this.middleware();
         this.routes();
     }
 
     // Configure Express middleware
-    private middleware(): void {
+    public middleware(): void {
         this.express.use(bodyParser.json());
         this.express.use(bodyParser.urlencoded({ extended: false }));
         this.express.use(express.static(__dirname + '/apidoc'));
         this.express.use(express.static(process.cwd()));
         this.express.use(function (req, res, next) {
-
             // Website you wish to allow to connect
             res.header('Access-Control-Allow-Origin', '*');
-        
             // Request methods you wish to allow
             res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        
             // Request headers you wish to allow
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-        
             if (req.method === "OPTIONS") {
                 return res.status(200).end();
             }
-
             // Pass to next layer of middleware
             next();
         });
     }
 
-    private routes(): void {
+    public routes(): void {
         
         this.express.get('/', (req,res,next) => {
             res.sendFile(__dirname + '/index.html');
@@ -87,7 +83,7 @@ class App {
          */
         this.express.get("/planets", (req,res,next) => {
             this.log.info(req.url)
-            this.getPlanets().then(planets => {
+            this.planetController.getPlanets().then(planets => {
                 if (planets) {
                     res.json(planets);
                 } else {
@@ -130,7 +126,7 @@ class App {
             this.log.info(req.url);
 
             if(this.isDataValid(req.body)) {
-                this.addPlanet(req.body).then(planet => {
+                this.planetController.addPlanet(req.body).then(planet => {
                     if (planet) {
                         res.json(planet);
                     } else {
@@ -177,7 +173,7 @@ class App {
         this.express.put("/planets/:id", (req,res,next) => {
             this.log.info(req.url)
             if(this.isDataValid(req.body)) {
-                this.updatePlanet(req.params.id, req.body).then(planet => {
+                this.planetController.updatePlanet(req.params.id, req.body).then(planet => {
                     if (planet) {
                         res.json(planet);
                     } else {
@@ -213,7 +209,7 @@ class App {
          *     }
          */
         this.express.delete("/planets/:id", (req,res,next) => {
-            this.deletePlanet(req.params.id).then(planet => {
+            this.planetController.deletePlanet(req.params.id).then(planet => {
                 if (planet) {
                     this.success(res);
                 } else {
@@ -229,88 +225,18 @@ class App {
         });
     }
 
-    private getPlanets() {
-        return Planet.find({}).then(result => {
-            return result;
-        })
-        .catch(error => {
-            this.log.info("Unable to retrieve all the planets" + error);
-            return undefined;
-        });
-    }
-
-    private addPlanet(body: any) {
-        const data = new Planet(body);
-        return data.save()
-            .then(planet => {
-                this.log.info("Added new planet to the database" + planet);
-                return planet;
-            })
-            .catch(error => {
-                this.log.info("Unable to add new planet to the database" + error);
-                return undefined;
-            });
-    }
-
-
-    private updatePlanet(id: string, body: any) {
-        if(mongoose.Types.ObjectId.isValid(id)) {
-            return Planet.findByIdAndUpdate(id, {$set:body} , {new:true}).then(planet =>{
-               if (planet) {
-                 this.log.info("Updated planet with id " + id);
-                 return planet;
-               } else {
-                this.log.info("Unable to update the planet with id: " + id);
-                return undefined;
-               }
-            }).catch(error => {
-                this.log.info("Error in the database: " + error)
-                return undefined;
-            });
-        } else {
-            this.log.info('Invalid Mongo id' + id);
-            return undefined;
-        }
-    }
-
-    private deletePlanet(id: string) {
-        if(mongoose.Types.ObjectId.isValid(id)) {
-            return Planet.deleteOne({_id: id})
-              .then(planet => {
-                 if (planet) {
-                    this.log.info('Removed planet with id ' + id);
-                    return planet;
-                 } else {
-                    this.log.info("Unable to delete the planet with id: " + id);
-                    return undefined;
-                 }
-            }).catch((error)=>{
-                this.log.info("Error in the database: " + error)
-                return undefined;
-            })
-        } else {
-            this.log.info('Invalid Mongo id' + id);
-            return undefined;
-        }
-    }
-
     private isDataValid(body: any): boolean {
-
         let isDataValid = true;
-
         if (!body.name || !body.distance || !body.gravity || !body.satellites || !body.radius || !body.imageUrl) {
             isDataValid = false;
         } else {
-
             if (body.distance < 0 || body.gravity < 0 || body.satellites < 0 || body.radius < 0 ) {
                 isDataValid = false;
             }
-    
             if (!body.imageUrl) {
                 isDataValid = false;
             }
         }
-
         return isDataValid;
     }
 
