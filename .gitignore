@@ -4,6 +4,7 @@
 /node_modules
 apidoc
 *.js
+!/app/test/*
 
 # profiling files
 chrome-profiler-events.json
