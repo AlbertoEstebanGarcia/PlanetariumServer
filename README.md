@@ -5,7 +5,7 @@ This project is the backend for the Planetarium project
 ## Tech stack
 
 The API was written in Node.js using the Express Framework.  For the persistence of the data it was used a MongoDB database hosted in MongoDB Atlas (DBaaS)
-In the test folder there is an integration test to test the API using `mocha` and `supertest` libraries
+In the test folder there is an integration test to test the API using `mocha` and `supertest` libraries.
 For the documentation of the API it  was used `apidoc`
 
 ## Local installation
