@@ -16,14 +16,14 @@ For the documentation of the API it  was used `apidoc`
 
 ## Development server
 
-The server is running in Heroku. You can access in the following URL:
+The server is running in Heroku. You can access in the following URL 
 [https://planetariumserver-salzburg.herokuapp.com/](https://planetariumserver-salzburg.herokuapp.com/)
 
 ## References
-[https://expressjs.com/](https://expressjs.com/)
-[https://account.mongodb.com/account/login](https://account.mongodb.com/account/login)
-[https://apidocjs.com/](https://apidocjs.com/)
-[https://mochajs.org/](https://mochajs.org/)
+- [https://expressjs.com/](https://expressjs.com/)
+- [https://account.mongodb.com/account/login](https://account.mongodb.com/account/login)
+- [https://apidocjs.com/](https://apidocjs.com/)
+- [https://mochajs.org/](https://mochajs.org/)
 
 ## Author
 Alberto Esteban García
